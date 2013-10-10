@@ -12,9 +12,9 @@ namespace super3dproject.Models
         {
             return new Point()
             {
-                X = -this.X,
-                Y = -this.Y,
-                Z = -this.Z
+                X = -X,
+                Y = -Y,
+                Z = -Z
             };
             
         }

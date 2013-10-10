@@ -104,7 +104,7 @@ namespace super3dproject.Graphics
             double cos = Math.Cos(angle);
             double sin = Math.Sin(angle);
             defaultXRotationMatrix[0, 0] = 1; defaultXRotationMatrix[0, 1] = 0; defaultXRotationMatrix[0, 2] = 0; defaultXRotationMatrix[0, 3] = 0;
-            defaultXRotationMatrix[1, 0] = 0; defaultXRotationMatrix[1, 1] = sin; defaultXRotationMatrix[1, 2] = sin; defaultXRotationMatrix[1, 3] = 0;
+            defaultXRotationMatrix[1, 0] = 0; defaultXRotationMatrix[1, 1] = cos; defaultXRotationMatrix[1, 2] = sin; defaultXRotationMatrix[1, 3] = 0;
             defaultXRotationMatrix[2, 0] = 0; defaultXRotationMatrix[2, 1] = -sin; defaultXRotationMatrix[2, 2] = cos; defaultXRotationMatrix[2, 3] = 0;
             defaultXRotationMatrix[3, 0] = 0; defaultXRotationMatrix[3, 1] = 0; defaultXRotationMatrix[3, 2] = 0; defaultXRotationMatrix[3, 3] = 1;
             return defaultXRotationMatrix;
@@ -184,18 +184,18 @@ namespace super3dproject.Graphics
 
                     mr1 = MultiplyMatrix(mr2, m);
 
-                    m = DefaultZRotationMatrix(angle); //default x rotation
+                    m = DefaultZRotationMatrix(angle); //default z rotation
 
                     mr2 = MultiplyMatrix(mr1, m);
 
                     m = NewMatrix(); 
-                    m[0, 0] = d; m[0, 2] = -a;  //nondefault y rotation the same
+                    m[0, 0] = d; m[0, 2] = -a;  //nondefault y rotation reverse
                     m[2, 0] = a; m[2, 2] = d;
 
                     mr1 = MultiplyMatrix(mr2, m);
 
                     m = NewMatrix(); 
-                    m[1, 1] = crd; m[1, 2] = -brd;  // nondefault x rotation the same
+                    m[1, 1] = crd; m[1, 2] = -brd;  // nondefault x rotation reverse
                     m[2, 1] = brd; m[2, 2] = crd;
 
                     mr2 = MultiplyMatrix(mr1, m);
@@ -208,9 +208,13 @@ namespace super3dproject.Graphics
             else
             {
                 mr1 = MovementMatrix(firstAxlePoint.GetNegative());
+                
                 m = DefaultXRotationMatrix(angle);
+                
                 mr2 = MultiplyMatrix(mr1, m);
+                
                 m = MovementMatrix(firstAxlePoint);
+                
                 axleRotationMatrixResult = MultiplyMatrix(mr2, m);
             }
             return axleRotationMatrixResult;
@@ -297,7 +301,76 @@ namespace super3dproject.Graphics
             m[2, 0] = 0; m[2, 1] = 0; m[2, 2] = 1; m[2, 3] = 0;
             m[3, 0] = 0; m[3, 1] = 0; m[3, 2] = 0; m[3, 3] = 1;
         }
+        private static double[,] rot_axis(double x1, double y1, double z1,
+            double x2, double y2, double z2, double angle)
+        {
+            double a, b, c, d, length;
+            double[,] m = new double[4, 4];
+            double[,] mr1 = new double[4, 4];
+            double[,] mr2 = new double[4, 4];
+            double[,] tm = new double[4, 4];
+            a = x2 - x1;
+            b = y2 - y1;
+            c = z2 - z1;
 
+
+            length = Math.Sqrt(Math.Pow(a, 2) + Math.Pow(b, 2) + Math.Pow(c, 2));
+            a = a / length; b = b / length; c = c / length;
+            d = Math.Sqrt(Math.Pow(b, 2) + Math.Pow(c, 2));
+
+            if (d > 0.0000001)
+            {
+                double crd = (c / d);
+                double brd = (b / d);
+
+                move(mr1, -x1, -y1, -z1);
+
+                init_matrix(m); //rotate x in xz plane
+                m[1, 1] = crd; m[1, 2] = brd;
+                m[2, 1] = -brd; m[2, 2] = crd;
+
+                mxm(mr1, m, mr2);
+
+                init_matrix(m); //rotate y
+                m[0, 0] = d; m[0, 2] = a;
+                m[2, 0] = -a; m[2, 2] = d;
+
+                mxm(mr2, m, mr1);
+
+                rot_z(m, angle);
+
+                mxm(mr1, m, mr2);
+
+                init_matrix(m); //inverse rotate y
+                m[0, 0] = d; m[0, 2] = -a;
+                m[2, 0] = a; m[2, 2] = d;
+
+                mxm(mr2, m, mr1);
+
+                init_matrix(m); //invers rotate x in xz plane
+                m[1, 1] = crd; m[1, 2] = -brd;
+                m[2, 1] = brd; m[2, 2] = crd;
+
+                mxm(mr1, m, mr2);
+
+                move(m, x1, y1, z1);
+
+                mxm(mr2, m, tm);
+
+                return tm;
+            }
+            else
+            {
+                move(mr1, -x1, -y1, -z1);
+                rot_x(m, angle);
+                mxm(mr1, m, mr2);
+                move(m, x1, y1, z1);
+                mxm(mr2, m, tm);
+
+                return tm;
+            }
+        }
+            
 
         private void mxa(double[,] b, double[,] c)
         {
@@ -318,6 +391,9 @@ namespace super3dproject.Graphics
           /*  move(m1, tx, ty, tz); пришлось закрыть, потому-что переменная m1 не объявленна. 
             mxa(b, m1);*/
         }
+
+
+
 
         #endregion
 
@@ -348,8 +424,7 @@ namespace super3dproject.Graphics
         {
 
             var rotationMatrix = AxleRotationMatrix(rotationAxle.firstPoint, rotationAxle.secondPoint, angle);
-
-
+         
 
             var rotateMatrixResult = new Matrix()
             {

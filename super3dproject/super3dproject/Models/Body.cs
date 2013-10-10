@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Drawing;
 using System.Windows.Shapes;
 using super3dproject.Graphics;
 namespace super3dproject.Models
@@ -15,42 +16,46 @@ namespace super3dproject.Models
         /// Внедрение матрицы в тело.
         /// Учительский bmxa
         /// </summary>
-        public void EmbedMatrix(Matrix matrix)
+        public bool EmbedMatrix(Matrix matrix)
         {
-            double[,] embedMatrix = matrix.matrix;
-            if (matrix.type != MatrixType.Perspective)
-                foreach (Point point in points)                                             // Каждая точка умнажается на матрицу. Алгоритм учительский
-                {
-                    var x = point.X;
-                    var y = point.Y;
-                    var z = point.Z;
-
-
-                    point.X = embedMatrix[0, 0] * x + embedMatrix[1, 0] * y + embedMatrix[2, 0] * z + embedMatrix[3, 0];
-                    point.Y = embedMatrix[0, 1] * x + embedMatrix[1, 1] * y + embedMatrix[2, 1] * z + embedMatrix[3, 1];
-                    point.Z = embedMatrix[0, 2] * x + embedMatrix[1, 2] * y + embedMatrix[2, 2] * z + embedMatrix[3, 2];
-
-                }
-            else
+            if (matrix != null)
             {
-                var coefficient = 1.0;
-                foreach (Point point in points)
-                {
-                    var x = point.X;
-                    var y = point.Y;
-                    var z = point.Z;
+                double[,] embedMatrix = matrix.matrix;
+                if (matrix.type != MatrixType.Perspective)
+                    foreach (Point point in points)                                             // Каждая точка умнажается на матрицу. Алгоритм учительский
+                    {
+                        var x = point.X;
+                        var y = point.Y;
+                        var z = point.Z;
 
-                    coefficient = embedMatrix[2, 2] / (z + embedMatrix[2, 2]);
-                    point.X = (x - embedMatrix[0, 0]) * coefficient + embedMatrix[0, 0];
-                    point.Y = (y - embedMatrix[1, 1]) * coefficient + embedMatrix[1, 1];
-                    point.Z = z;
+
+                        point.X = embedMatrix[0, 0] * x + embedMatrix[1, 0] * y + embedMatrix[2, 0] * z + embedMatrix[3, 0];
+                        point.Y = embedMatrix[0, 1] * x + embedMatrix[1, 1] * y + embedMatrix[2, 1] * z + embedMatrix[3, 1];
+                        point.Z = embedMatrix[0, 2] * x + embedMatrix[1, 2] * y + embedMatrix[2, 2] * z + embedMatrix[3, 2];
+
+                    }
+                else
+                {
+                    var coefficient = 1.0;                                                  // матрица перспективы
+                    foreach (Point point in points)
+                    {
+                        var x = point.X;
+                        var y = point.Y;
+                        var z = point.Z;
+
+                        coefficient = embedMatrix[2, 2] / (z + embedMatrix[2, 2]);
+                        point.X = (x - embedMatrix[0, 0]) * coefficient + embedMatrix[0, 0];
+                        point.Y = (y - embedMatrix[1, 1]) * coefficient + embedMatrix[1, 1];
+                        point.Z = z;
+                    }
+                }
+                foreach (var detail in details)
+                {
+                    detail.EmbedMatrix(matrix);
                 }
             }
-            foreach (var detail in details)
-            {
-                detail.EmbedMatrix(matrix);
-            }
-
+            else return false;
+            return true;
         }
 
         public List<Point> points = new List<Point>();                                  // точки тела
@@ -61,6 +66,10 @@ namespace super3dproject.Models
         /// </summary>
         public List<Body> details = new List<Body>();
 
+        public Body this[string detailName]
+        {
+            get { return details.Find(x => x.name == detailName); }
+        }
 
         /// <summary>
         /// Вырезает соединения из тела и возвращает тело из этих соединений. Аккуратнее с этой функцией.
@@ -89,6 +98,29 @@ namespace super3dproject.Models
             newDetailFromBody.ReloadBody();
             return newDetailFromBody;
 
+        }
+        public Body CutDetailFromBody(string name, string[] connectionNames)
+        {
+            Body newDetailFromBody = new Body() { name = name };
+            foreach (var connection in connections.Where(x=>connectionNames.Contains(x.name)))
+            {
+                newDetailFromBody.connections.Add(connection);
+                foreach (var point in connection.points)
+                {
+
+                    newDetailFromBody.points.Add(point);
+                    points.Remove(point);
+                }
+            }
+
+            foreach (var deleteConnection in newDetailFromBody.connections)
+            {
+                connections.Remove(deleteConnection);
+            }
+
+            newDetailFromBody.GenerateAxles();
+            newDetailFromBody.ReloadBody();
+            return newDetailFromBody;
         }
         /// <summary>
         /// Возвращает точку центра тела. 
@@ -132,17 +164,8 @@ namespace super3dproject.Models
             List<Connection> newConnections = new List<Connection>();
             foreach (var connection in connections)
             {
-                var newConnection = new Connection();
-                foreach (var point in connection.points)
-                {
-                    var newPoint = new Point()
-                    {
-                        X = point.X,
-                        Y = point.Y,
-                        Z = point.Z
-                    };
-                    newConnection.points.Add(newPoint);
-                }
+                var newConnection = connection.export();
+                
                 newConnections.Add(newConnection);
             }
 
@@ -166,10 +189,11 @@ namespace super3dproject.Models
         public void GenerateAxles()
         {
             var center = GetCenter();
-            var axles = new AxleSet()
+            axles = new AxleSet()
             {
                 X = new Axle()
                 {
+                    info = "x",
                     firstPoint = new Point()
                     {
                         X = 0,
@@ -180,6 +204,7 @@ namespace super3dproject.Models
                 },
                 Y = new Axle()
                 {
+                    info = "y",
                     firstPoint = new Point()
                     {
                         X = center.X,
@@ -190,6 +215,7 @@ namespace super3dproject.Models
                 },
                 Z = new Axle()
                 {
+                    info = "z",
                     firstPoint = new Point()
                     {
                         X = center.X,
@@ -197,10 +223,11 @@ namespace super3dproject.Models
                         Z = 0
                     },
                     secondPoint = center
-                }
+                },
+                customs = axles.customs
             };
-
-
+            ReloadBody();
+            
         }
         /// <summary>
         /// Переработка тела. Пересоздаёт все ссылки. Разбивает на детали.
@@ -212,17 +239,11 @@ namespace super3dproject.Models
             var newConnections = new List<Connection>();
             foreach (var connection in connections)
             {
-                var newConnection = new Connection();
-                foreach (var point in connection.points)
+                var newConnection = connection.export();
+                new Connection();
+                foreach (var point in newConnection.points)
                 {
-                    var newPoint = new Point()
-                    {
-                        X = point.X,
-                        Y = point.Y,
-                        Z = point.Z
-                    };
-                    newConnection.points.Add(newPoint);
-                    points.Add(newPoint);
+                    points.Add(point);
                 }
                 newConnections.Add(newConnection);
 
@@ -246,6 +267,7 @@ namespace super3dproject.Models
             {
                 points.Clear();
                 connections.Clear();                                                        //очищаем тело
+                axles.customs.Clear();
             }
 
             try
@@ -280,9 +302,47 @@ namespace super3dproject.Models
                         currentPositionInFile = reader.ReadLine();
                         do
                         {
-                            var connectionPointsNumbers = currentPositionInFile.Split(' ');      // разбиваем на массив номеров точек
+                            var connectionPointsNumbers = currentPositionInFile.Split(' ').ToList();      // разбиваем на массив номеров точек
                             var newConnection = new Connection();                                // создаём новое соединение
+                            
+                            var nameAndColorCheckTemp = 0;
+                            while (!int.TryParse(connectionPointsNumbers[0], out nameAndColorCheckTemp)) // проверяем на кастомные имя и цвет
+                            {
+                                var nameAndColorParseTemp = connectionPointsNumbers[0];
+                                if (nameAndColorParseTemp[0] != '#')
+                                    newConnection.name = nameAndColorParseTemp;
+                                else
+                                {
+                                    System.Windows.Media.Color currentColor = System.Windows.Media.Colors.Red;
+                                    try
+                                    {
+                                        try
+                                        {
+                                            currentColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(nameAndColorParseTemp);
+                                        }
+                                        catch
+                                        {
+                                            var color = Color.FromName(nameAndColorParseTemp.Substring(1));
+                                            {
+                                                currentColor = new System.Windows.Media.Color()
+                                                {
+                                                    A = color.A,
+                                                    R = color.R,
+                                                    G = color.G,
+                                                    B = color.B
+                                                };
+                                            }
+                                        }
+                                    }
+                                    catch
+                                    {
 
+                                    }
+
+                                   newConnection.color = new System.Windows.Media.SolidColorBrush(currentColor);
+                                }
+                                connectionPointsNumbers.Remove(nameAndColorParseTemp);
+                            }
                             foreach (string pointNumber in connectionPointsNumbers)              // идём по номерам
                             {
                                 var currentPoint = points[int.Parse(pointNumber) - 1];           // парсим номер, берём точку, заносим в соединение
@@ -300,7 +360,7 @@ namespace super3dproject.Models
 
                     if (currentPositionInFile == "Axles")                               // продолжаем осями
                     {
-                        var axlesSet = new AxleSet();                                   // создаем сет осей
+                        var axlesSet = new AxleSet() { customs = axles.customs };                                   // создаем сет осей
                         currentPositionInFile = reader.ReadLine();
                         do
                         {
@@ -385,32 +445,30 @@ namespace super3dproject.Models
                     var nextPoint = connection.points[i + 1];
 
                     var myLine = new Line();                                             // создаём линию
-                    myLine.Stroke = connection.color;
+
+                    if (connection.color != null)
+                        myLine.Stroke = connection.color;
+                    else
+                        myLine.Stroke = System.Windows.Media.Brushes.LightSteelBlue;
+
                     myLine.X1 = currentPoint.X;
                     myLine.Y1 = currentPoint.Y;
                     myLine.X2 = nextPoint.X;
                     myLine.Y2 = nextPoint.Y;
                     myLine.StrokeThickness = 1;
-                    if(name == "lights")
-                      result.Add(myLine);                                                 // выводим линию
-                }
-                foreach (var detail in details)
-                {
-
-                    result.AddRange(detail.GetLines());
+                    result.Add(myLine);                                                 // выводим линию
                 }
 
-                
+
+
+            }
+            foreach (var detail in details)
+            {
+
+                result.AddRange(detail.GetLines());
             }
             return result;
         }
     }
-    public class Connection
-    {
-        public System.Windows.Media.Brush color = System.Windows.Media.Brushes.LightSteelBlue;
-        public List<Point> points = new List<Point>();
-        public Connection()
-        {
-        }
-    }
+    
 }

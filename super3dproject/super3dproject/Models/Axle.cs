@@ -11,9 +11,9 @@ namespace super3dproject.Models
         public string info = "";
         public Point firstPoint = new Point();
         public Point secondPoint = new Point();
-        public Point[] GetPoints()
+        public IEnumerable<Point> GetPoints()
         {
-            return new Point[] { firstPoint, secondPoint };
+            return new List<Point>(){ firstPoint, secondPoint };
         }
         public Axle export()
         {
@@ -46,7 +46,7 @@ namespace super3dproject.Models
         public Axle Y = new Axle();
         public Axle Z = new Axle();
         public List<Axle> customs = new List<Axle>();
-        public Point[] GetPoints()
+        public IEnumerable<Point> GetPoints()
         {
             var points = X.GetPoints().ToList();
             points.AddRange(Y.GetPoints());
@@ -55,7 +55,7 @@ namespace super3dproject.Models
             {
                 points.AddRange(axle.GetPoints());
             }
-            return points.ToArray() ;
+            return points;
         }
         public AxleSet export()
         {

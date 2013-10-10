@@ -1,8 +1,13 @@
 ﻿<Window x:Class="super3dproject.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow"  Loaded="WindowLoaded">
-    <Grid>
-        <Canvas Name="Image"></Canvas>
+        Title="MainWindow"   
+    WindowStartupLocation="CenterScreen" WindowState="Maximized" Loaded="WindowLoaded" KeyUp="KeyUpEvent" KeyDown="KeyDownEvent">
+    <Grid Name="Screen">
+    <Button Content="Может капот?" Click="HoodClick" Panel.ZIndex="1000" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100"/>
+    
+        <Canvas Background="#fefefe" MouseMove="Image_MouseMove" MouseWheel="Image_MouseWheel" Name="Image"  Margin="0,0,0,0">
+        </Canvas>
+        
     </Grid>
 </Window>
