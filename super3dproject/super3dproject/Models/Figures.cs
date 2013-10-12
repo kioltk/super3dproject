@@ -8,7 +8,7 @@ namespace super3dproject.Models
 {
     public class Figures
     {
-        
+
         public static Body MultiCylinder(int circlePointsCount, double firstRadius, double secondRadius, double height)
         {
             Body newCube = new Body()
@@ -22,32 +22,16 @@ namespace super3dproject.Models
                 padding = firstRadius;
             else
                 padding = secondRadius;
-            var newConnection = new Connection();
-            var firstPoint = new Point()
+
+            var firstConnection = new Connection();
+            var secondConnection = new Connection();
+
+            Point firstPoint, secondPoint;
+            Connection heightConnection;
+            for (int i = 0; i < circlePointsCount; i++)
             {
-                X = padding + firstRadius * Math.Cos(0),
-                Y = padding + firstRadius * Math.Sin(0),
-                Z = 0
-            };
 
-            var secondPoint = new Point()
-            {
-                X = padding + secondRadius * Math.Cos(0),
-                Y = padding + secondRadius * Math.Sin(0),
-                Z = height
-            };
-            newConnection.points.Add(firstPoint);
-            newConnection.points.Add(secondPoint);
-
-            newCube.connections.Add(newConnection);
-
-            for (int i = 1; i < circlePointsCount; i++)
-            {
-                newConnection = new Connection();
-
-                newConnection.points.Add(secondPoint);
-                newConnection.points.Add(firstPoint);
-
+                heightConnection = new Connection();
                 firstPoint = new Point()
                 {
                     X = padding + firstRadius * Math.Cos(alfa * i),
@@ -61,24 +45,30 @@ namespace super3dproject.Models
                     Y = padding + secondRadius * Math.Sin(alfa * i),
                     Z = height
                 };
-                newConnection.points.Add(firstPoint);
-                newConnection.points.Add(secondPoint);
-                newConnection.points.Add(newConnection.points[0]);
+                
+                heightConnection.points.Add(secondPoint);
+                heightConnection.points.Add(firstPoint);
 
-                newCube.connections.Add(newConnection);
+                firstConnection.points.Add(firstPoint);
+                secondConnection.points.Add(secondPoint);
+
+
+                newCube.connections.Add(heightConnection);
+                newCube.points.Add(firstPoint);
+                newCube.points.Add(secondPoint);
             }
-            newConnection = new Connection();
-            newConnection.points.Add(secondPoint);
-            newConnection.points.Add(firstPoint);
+            
 
-            newConnection.points.AddRange(newCube.connections.First().points.Take(2));
-            newConnection.points.Add(secondPoint);
-            newCube.connections.Add(newConnection);
+            firstConnection.points.Add(firstConnection.points.First());
+            secondConnection.points.Add(secondConnection.points.First());
+            newCube.connections.Add(firstConnection);
+            newCube.connections.Add(secondConnection);
 
-            newCube.ReloadBody();
             newCube.GenerateAxles();
+            newCube.ReloadBody();
             return newCube;
         }
+        
         public static Body Cylinder(int circlePointsCount, int radius, double height)
         {
             var cylinder = MultiCylinder(circlePointsCount, radius, radius, height);
@@ -98,6 +88,6 @@ namespace super3dproject.Models
             var pyramid = MultiCylinder(4, diagonal / 2, 0, height);
             return pyramid;
         }
-
+        
     }
 }

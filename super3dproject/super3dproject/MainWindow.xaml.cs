@@ -28,22 +28,40 @@ namespace super3dproject
             InitializeComponent();                                                      // конструктор, его категорически не рекомендуется трогать
         }                                                                               // весь начинающий работу код писать в WindowLoaded
 
-        Body car = new Body()
-            {
-                name = "mustang"
-            };
+        Body car = new Body();
         Body hood = new Body();
         Body wheel = new Body();
         Body helmet = new Body();
+        Body abrams = new Body();
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
 
+            carLoading();
+            helmetLoading();
+            abramsLoading();
+            
+
+
+           
+            System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
+            dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 10); // промежутак в мс
+            dispatcherTimer.Start();
+
+            System.Windows.Threading.DispatcherTimer fpsTimer = new System.Windows.Threading.DispatcherTimer();
+            fpsTimer.Tick += new EventHandler(fpsTimer_Tick);
+            fpsTimer.Interval = new TimeSpan(0, 0, 0, 1); // промежутак в мс
+            fpsTimer.Start();
+        }
+
+        public void carLoading()
+        {
             Matrix carMatrix;
             car.LoadingFromResource("sources/mustang.txt", false);
             car.GenerateAxles();
 
-            
-            wheel = Figures.Cylinder(150,130,100);
+
+            wheel = Figures.Cylinder(32, 130, 100);
             wheel.name = "wheel";
             var wheelMatrix = Matrix.Movement(new Models.Point()
             {
@@ -52,17 +70,17 @@ namespace super3dproject
                 Z = 25
             });
             wheel.EmbedMatrix(wheelMatrix);
-            
+
             car.details.Add(wheel);
-            
+
             var wheelYAxle = wheel.axles.Y.export();
-            wheelYAxle.info= "wheelYAxle";
+            wheelYAxle.info = "wheelYAxle";
             car.axles.customs.Add(wheelYAxle);
 
-            var gun = Figures.Cylinder(32, 100, 300);
+            var gun = Figures.Cylinder(10, 100, 300);
             var gunMatrix = Matrix.Movement(new Models.Point()
             {
-               X = 860,
+                X = 860,
                 Y = -250,
                 Z = 75
             });
@@ -102,15 +120,26 @@ namespace super3dproject
             hood = car.CutDetailFromBody("hood", new string[] { "Hood" });
             car.details.Add(hood);
             car.ReloadBody();
-            carMatrix = Matrix.Scaling(0.5, car.GetCenter());
+            carMatrix = Matrix.Scaling(0.5, new Models.Point() { X = 0, Y = 0, Z = 0 });
+            car.EmbedMatrix(carMatrix);
+            carMatrix = Matrix.Movement(new Models.Point()
+            {
+                X = -300,
+                Y = 500,
+                Z = 100
+            });
+            car.EmbedMatrix(carMatrix);
+            carMatrix = Matrix.Rotation(car.axles.Y, Math.PI / 2);
             car.EmbedMatrix(carMatrix);
             
+        }
+        public void helmetLoading()
+        {
             helmet.LoadingFromResource("sources/IronMan/helmet.txt", true);
-            //helmet.EmbedMatrix(carMatrix);
-            var face = helmet.CutDetailFromBody("face", new string[] { "Face", "Brow", "EyeLeft",  "EyeRight", "EyeBrow","CheekbonesLeft", "CheekbonesRight" ,"Face2","Forehead" });
+            var face = helmet.CutDetailFromBody("face", new string[] { "Face", "Brow", "EyeLeft", "EyeRight", "EyeBrow", "CheekbonesLeft", "CheekbonesRight", "Face2", "Forehead" });
             helmet.details.Add(face);
             helmet.ReloadBody();
-            
+
             var helmetMatrix = Matrix.Movement(new Models.Point()
             {
                 X = 700,
@@ -119,29 +148,49 @@ namespace super3dproject
             });
             helmet.EmbedMatrix(helmetMatrix);
 
-            carMatrix = Matrix.Movement(new Models.Point()
+        }
+        public void abramsLoading()
+        {
+
+            abrams.LoadingFromResource("sources/Abrams/turret.txt", true);
+            abrams.ReloadBody();
+
+            var gun = Figures.Cylinder(8, 10, 270);
+            gun.name = "gun";
+            var gunMatrix = Matrix.Rotation(gun.axles.Y, Math.PI / 2);
+            gun.EmbedMatrix(gunMatrix);
+            gunMatrix = Matrix.Rotation(gun.axles.X, -Math.PI / 32);
+            gun.EmbedMatrix(gunMatrix);
+            gunMatrix = Matrix.Movement(new Models.Point()
+                {
+                    X = -120,
+                    Y = 20,
+                    Z = -20
+                });
+            gun.EmbedMatrix(gunMatrix);
+
+                
+            abrams.details.Add(gun);
+            var abramsMatrix = Matrix.Movement(new Models.Point()
             {
-                X = -300,
-                Y = 200,
-                Z = 100
+                X = 1000,
+                Y = 500,
+                Z = 000
             });
-            car.EmbedMatrix(carMatrix);
-            carMatrix = Matrix.Rotation(car.axles.Y,  Math.PI/2);
-            car.EmbedMatrix(carMatrix);
+            abrams.EmbedMatrix(abramsMatrix);
 
+            abramsMatrix = Matrix.Scaling(1, new Models.Point() { X = 0, Y = 0, Z = 0 });
+            abrams.EmbedMatrix(abramsMatrix);
 
-           
-            System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
-            dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 10); // промежутак в мс
-            dispatcherTimer.Start();
-
-            System.Windows.Threading.DispatcherTimer fpsTimer = new System.Windows.Threading.DispatcherTimer();
-            fpsTimer.Tick += new EventHandler(fpsTimer_Tick);
-            fpsTimer.Interval = new TimeSpan(0, 0, 0, 1); // промежутак в мс
-            fpsTimer.Start();
+            abramsMatrix = Matrix.Rotation(abrams.axles.Y, Math.PI / -2);
+            abrams.EmbedMatrix(abramsMatrix);
+            
         }
 
+        public void merkavaLoading()
+        {
+ 
+        }
         private void fpsTimer_Tick(object sender, EventArgs e)
         {
             FpsBlock.Text = fps.ToString(); ;
@@ -187,7 +236,87 @@ namespace super3dproject
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             fps++;
+            if (gunShuting)
+            {
+                if (gunPosition > 14)
+                {
+                    gunShuting = false;
+                }
+                else
+                {
+                    var gunCar = car["gun"];
+                    var zAxlePoint = gunCar.axles.Z.firstPoint;
+                    var centerPoint = gunCar.GetCenter();
+                    var vectorPoint = new Models.Point()
+                    {
+                        X = (centerPoint.X - zAxlePoint.X) / 5,
+                        Y = (centerPoint.Y - zAxlePoint.Y) / 5,
+                        Z = (centerPoint.Z - zAxlePoint.Z) / 5
+                    };
+
+                    var gunMatrix = Matrix.Movement(vectorPoint);
+                    gunCar.EmbedMatrix(gunMatrix);
+
+
+
+
+
+                    var gunAbrams = abrams["gun"];
+                    zAxlePoint = gunAbrams.axles.Z.firstPoint;
+                    centerPoint = gunAbrams.GetCenter();
+                    vectorPoint = new Models.Point()
+                    {
+                        X = (centerPoint.X - zAxlePoint.X) / 15,
+                        Y = (centerPoint.Y - zAxlePoint.Y) / 15,
+                        Z = (centerPoint.Z - zAxlePoint.Z) / 15
+                    };
+
+                    gunMatrix = Matrix.Movement(vectorPoint);
+                    gunAbrams.EmbedMatrix(gunMatrix);
+                    gunPosition += 2;
+                }
+            }
+            else
+            {
+                if (gunPosition > 0)
+                {
+                    var gunCar = car["gun"];
+                    var zAxlePoint = gunCar.axles.Z.firstPoint;
+                    var centerPoint = gunCar.GetCenter();
+                    var vectorPoint = new Models.Point()
+                    {
+                        X = (centerPoint.X - zAxlePoint.X) / -10,
+                        Y = (centerPoint.Y - zAxlePoint.Y) / -10,
+                        Z = (centerPoint.Z - zAxlePoint.Z) / -10
+                    };
+
+                    var gunMatrix = Matrix.Movement(vectorPoint);
+                    gunCar.EmbedMatrix(gunMatrix);
+                    
+                    
+                    var gunAbrams = abrams["gun"];
+                    zAxlePoint = gunAbrams.axles.Z.firstPoint;
+                    centerPoint = gunAbrams.GetCenter();
+                    vectorPoint = new Models.Point()
+                    {
+                        X = (centerPoint.X - zAxlePoint.X) / -30,
+                        Y = (centerPoint.Y - zAxlePoint.Y) / -30,
+                        Z = (centerPoint.Z - zAxlePoint.Z) / -30
+                    };
+
+                    gunMatrix = Matrix.Movement(vectorPoint);
+                    
+                    gunAbrams.EmbedMatrix(gunMatrix);
+                    gunPosition--;
+                }
+            }
+/*
+
             var coefficient = -50;
+
+
+
+
 
 
             if (gunShuting)
@@ -199,6 +328,7 @@ namespace super3dproject
                 }
             }
             else
+                
                 gunPosition--;
 
             if (gunPosition > 0)
@@ -221,7 +351,7 @@ namespace super3dproject
                 var gunMatrix = Matrix.Movement(vectorPoint);
                 gun.EmbedMatrix(gunMatrix);
             }
-
+            */
 
 
             if (wheelRunning)
@@ -236,6 +366,12 @@ namespace super3dproject
                 {
                     if (wheelRotateAngle < 10)
                     {
+
+                        var turretAbramsAxle = abrams.axles.Y;
+                        var abramsMatrix = Matrix.Rotation(turretAbramsAxle, 0.05);
+                        abrams.EmbedMatrix(abramsMatrix);
+
+
                         var wheelYAxle = car.axles.customs.Find(x => x.info == "wheelYAxle");
                         var wheelMatrix = Matrix.Rotation(wheelYAxle, 0.05);
                         wheel.EmbedMatrix(wheelMatrix);
@@ -246,6 +382,13 @@ namespace super3dproject
                 {
                     if (wheelRotateAngle > -10)
                     {
+
+                        var turretAbramsAxle = abrams.axles.Y;
+                        var abramsMatrix = Matrix.Rotation(turretAbramsAxle, -0.05);
+                        abrams.EmbedMatrix(abramsMatrix);
+
+
+
                         var wheelYAxle = car.axles.customs.Find(x => x.info == "wheelYAxle");
                         var wheelMatrix = Matrix.Rotation(wheelYAxle, -0.05);
                         wheel.EmbedMatrix(wheelMatrix);
@@ -287,7 +430,7 @@ namespace super3dproject
             {
                 copycar = car.export();
                 copycar.EmbedMatrix(carPerspectiveMatrix);
-                foreach (var line in copycar.GetLines())
+                foreach (var line in copycar.GetPolylines())
                 {
                     Image.Children.Add(line);
                 }
@@ -302,13 +445,20 @@ namespace super3dproject
                 var sCopy = helmet.export();
                 sCopy.EmbedMatrix(carPerspectiveMatrix);
 
-                foreach (var line in sCopy.GetLines())
+                foreach (var line in sCopy.GetPolylines())
                 {
                     Image.Children.Add(line);
                 }
             }
-            
+            {
+                var abramsCopy = abrams.export();
+                abramsCopy.EmbedMatrix(carPerspectiveMatrix);
 
+                foreach (var line in abramsCopy.GetPolylines())
+                {
+                    Image.Children.Add(line);
+                }
+            }
         }
 
         private void Image_MouseWheel(object sender, MouseWheelEventArgs e)

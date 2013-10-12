@@ -469,6 +469,43 @@ namespace super3dproject.Models
             }
             return result;
         }
+        /// <summary>
+        /// Получает соединения тела в виде кривых ( Polyline ) и всех его деталей.
+        /// Отличие от линий ( Line ) - кривая ( Polyline ) -  это неприрывная с большим количеством точек. 
+        /// В canvas лучше добавить кривую с 50 точками, чем 50 линий по 2 точки
+        /// </summary>
+        public IEnumerable<Polyline> GetPolylines()
+        {
+            // отличие от линий - полилайн это кривая, с большим количеством точек. 
+            // в canvas лучше добавить кривую с 50 точками, чем 50 линий по 2 точки
+            var result = new List<Polyline>();
+            foreach (Connection connection in connections)                               // перебираем соединения
+            {
+                var myPolyline = new Polyline();                                             // создаём полилайн
+                    myPolyline.StrokeThickness = 1;                                          
+                    myPolyline.FillRule = System.Windows.Media.FillRule.EvenOdd;
+                    if (connection.color != null)
+                        myPolyline.Stroke = connection.color;
+                    else
+                        myPolyline.Stroke = System.Windows.Media.Brushes.LightSteelBlue;
+
+                foreach(var currentPoint in connection.points)                      // перебираем точки в соединении
+                {
+                    System.Windows.Point polylinePoint = new System.Windows.Point(currentPoint.X, currentPoint.Y);
+                    myPolyline.Points.Add(polylinePoint);
+                }
+
+                 result.Add(myPolyline);                                                 // выводим линию
+              
+
+            }
+            foreach (var detail in details)
+            {
+
+                 result.AddRange(detail.GetPolylines());
+            }
+            return result;
+        }
     }
     
 }
