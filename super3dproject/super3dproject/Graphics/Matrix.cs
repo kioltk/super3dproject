@@ -493,6 +493,7 @@ namespace super3dproject.Graphics
         Rotation,
         Scaling,
         Movement,
-        Perspective
+        Perspective,
+        Custom
     }
 }

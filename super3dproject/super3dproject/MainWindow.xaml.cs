@@ -12,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
 using super3dproject.Models;
 using super3dproject.Graphics;
 
@@ -40,13 +39,12 @@ namespace super3dproject
         {
 
             Matrix carMatrix;
-            
             car.LoadingFromResource("sources/mustang.txt", false);
             car.GenerateAxles();
 
-            var hoodOpenAxle = car.axles.customs[0].export();
             
             wheel = Figures.Cylinder(150,130,100);
+            wheel.name = "wheel";
             var wheelMatrix = Matrix.Movement(new Models.Point()
             {
                 X = 210,
@@ -54,8 +52,9 @@ namespace super3dproject
                 Z = 25
             });
             wheel.EmbedMatrix(wheelMatrix);
-            wheel.name = "wheel";
+            
             car.details.Add(wheel);
+            
             var wheelYAxle = wheel.axles.Y.export();
             wheelYAxle.info= "wheelYAxle";
             car.axles.customs.Add(wheelYAxle);
@@ -99,30 +98,31 @@ namespace super3dproject
             gunBase.EmbedMatrix(gunBaseMatrix);
             car.details.Add(gunBase);
 
-
+            var hoodOpenAxle = car.axles["HoodOpen"].export();
             hood = car.CutDetailFromBody("hood", new string[] { "Hood" });
             car.details.Add(hood);
             car.ReloadBody();
-            carMatrix = Matrix.Scaling(2, new Models.Point() { X = 0, Y = 0, Z = 0 });
+            carMatrix = Matrix.Scaling(0.5, car.GetCenter());
             car.EmbedMatrix(carMatrix);
+            
             helmet.LoadingFromResource("sources/IronMan/helmet.txt", true);
-
-            helmet.EmbedMatrix(carMatrix);
+            //helmet.EmbedMatrix(carMatrix);
             var face = helmet.CutDetailFromBody("face", new string[] { "Face", "Brow", "EyeLeft",  "EyeRight", "EyeBrow","CheekbonesLeft", "CheekbonesRight" ,"Face2","Forehead" });
             helmet.details.Add(face);
             helmet.ReloadBody();
-            carMatrix = Matrix.Movement(new Models.Point()
+            
+            var helmetMatrix = Matrix.Movement(new Models.Point()
             {
-                X = 500,
-                Y = 100,
+                X = 700,
+                Y = 300,
                 Z = 100
             });
-            helmet.EmbedMatrix(carMatrix);
+            helmet.EmbedMatrix(helmetMatrix);
 
             carMatrix = Matrix.Movement(new Models.Point()
             {
-                X = 300,
-                Y = 400,
+                X = -300,
+                Y = 200,
                 Z = 100
             });
             car.EmbedMatrix(carMatrix);
@@ -130,26 +130,36 @@ namespace super3dproject
             car.EmbedMatrix(carMatrix);
 
 
-            
-            foreach (var line in car.GetLines())
-                Image.Children.Add(line);
-
+           
             System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 10);
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 10); // промежутак в мс
             dispatcherTimer.Start();
+
+            System.Windows.Threading.DispatcherTimer fpsTimer = new System.Windows.Threading.DispatcherTimer();
+            fpsTimer.Tick += new EventHandler(fpsTimer_Tick);
+            fpsTimer.Interval = new TimeSpan(0, 0, 0, 1); // промежутак в мс
+            fpsTimer.Start();
+        }
+
+        private void fpsTimer_Tick(object sender, EventArgs e)
+        {
+            FpsBlock.Text = fps.ToString(); ;
+            fps = 0;
         }
         Body copycar;
 
         Matrix carPerspectiveMatrix;
         private void Image_MouseMove(object sender, MouseEventArgs e)
         {
+
             carPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
             {
                 X = e.GetPosition(Screen).X,
                 Y = e.GetPosition(Screen).Y,
                 Z = zoomZPosition
             });
+
         }
         bool hoodOpening = false;
         bool wheelRunning = false;
@@ -158,7 +168,7 @@ namespace super3dproject
         int wheelRunDirection = 1;
         int hoodAngle;
         int wheelRotateAngle;
-
+        int fps;
         bool gunShuting = false;
         int gunPosition = 0;
 
@@ -171,9 +181,12 @@ namespace super3dproject
         {
            
         }
+        bool hideCar = false;
+        bool hideIron = false;
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
+            fps++;
             var coefficient = -50;
 
 
@@ -268,22 +281,33 @@ namespace super3dproject
                 }
 
             }
-
-            copycar = car.export();
-            copycar.EmbedMatrix(carPerspectiveMatrix);
-
             Image.Children.Clear();
-            // foreach (var line in copycar.GetLines())
-            //    Image.Children.Add(line);
-            var sCopy = helmet.export();
-            sCopy.EmbedMatrix(carPerspectiveMatrix);
 
-            foreach (var line in sCopy.GetLines())
+            if (!hideCar)
             {
-                Image.Children.Add(line);
+                copycar = car.export();
+                copycar.EmbedMatrix(carPerspectiveMatrix);
+                foreach (var line in copycar.GetLines())
+                {
+                    Image.Children.Add(line);
+                }
             }
 
 
+
+
+            if (!hideIron)
+            {
+
+                var sCopy = helmet.export();
+                sCopy.EmbedMatrix(carPerspectiveMatrix);
+
+                foreach (var line in sCopy.GetLines())
+                {
+                    Image.Children.Add(line);
+                }
+            }
+            
 
         }
 
@@ -363,6 +387,16 @@ namespace super3dproject
                     }
                     break;
             }
+        }
+
+        private void hideIronClick(object sender, RoutedEventArgs e)
+        {
+            hideIron = !hideIron;
+        }
+
+        private void hideCarClick(object sender, RoutedEventArgs e)
+        {
+            hideCar = !hideCar;
         }
 
 

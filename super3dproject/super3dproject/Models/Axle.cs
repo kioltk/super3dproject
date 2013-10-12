@@ -42,9 +42,15 @@ namespace super3dproject.Models
     }
     public class AxleSet
     {
+        public Axle this[string axleName]
+        {
+            get { return customs.Find(x => x.info == axleName); }
+        }
+
         public Axle X = new Axle();
         public Axle Y = new Axle();
         public Axle Z = new Axle();
+
         public List<Axle> customs = new List<Axle>();
         public IEnumerable<Point> GetPoints()
         {
