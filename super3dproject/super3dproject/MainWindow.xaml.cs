@@ -36,13 +36,12 @@ namespace super3dproject
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
 
-            carLoading();
-            helmetLoading();
-            abramsLoading();
-            
+            CarLoading();
+            HelmetLoading();
+            AbramsLoading();
+            CameraLoading();
 
 
-           
             System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 10); // промежутак в мс
@@ -54,7 +53,46 @@ namespace super3dproject
             fpsTimer.Start();
         }
 
-        public void carLoading()
+        private void CameraLoading()
+        {
+
+            cameraRotationAxle = new Axle
+            {
+                firstPoint = new Models.Point()
+                {
+                    X = 683,
+                    Y = 0,
+                    Z = -1000
+                },
+                secondPoint = new Models.Point()
+                {
+                    X = 683,
+                    Y = 384,
+                    Z = -1000
+                }
+            };
+            cameraPosition = new Models.Point()
+            {
+                X = 683,
+                Y = 200,
+                Z = 00
+            };
+
+            cameraMovementMatrix = Matrix.Movement(new Models.Point()
+            {
+                X = cameraPosition.X - 683,
+                Y = cameraPosition.Y - 384,
+                Z = -cameraPosition.Z
+            });
+            cameraPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
+            {
+                X = 683,
+                Y = 384,
+                Z = 1000
+            });
+            cameraRotationMatrix = Matrix.Rotation(cameraRotationAxle, cameraRotationAngle);
+        }
+        public void CarLoading()
         {
             Matrix carMatrix;
             car.LoadingFromResource("sources/mustang.txt", false);
@@ -133,7 +171,7 @@ namespace super3dproject
             car.EmbedMatrix(carMatrix);
             
         }
-        public void helmetLoading()
+        public void HelmetLoading()
         {
             helmet.LoadingFromResource("sources/IronMan/helmet.txt", true);
             var face = helmet.CutDetailFromBody("face", new string[] { "Face", "Brow", "EyeLeft", "EyeRight", "EyeBrow", "CheekbonesLeft", "CheekbonesRight", "Face2", "Forehead" });
@@ -149,11 +187,20 @@ namespace super3dproject
             helmet.EmbedMatrix(helmetMatrix);
 
         }
-        public void abramsLoading()
+        public void AbramsLoading()
         {
 
-            abrams.LoadingFromResource("sources/Abrams/turret.txt", true);
-            abrams.ReloadBody();
+
+
+            
+        //    abrams.LoadingFromResource("sources/Abrams/base.txt", true);
+
+            var abramsTurret = new Body();
+           abramsTurret.LoadingFromResource("sources/Abrams/turret.txt", true);
+           abramsTurret.ReloadBody();
+           abramsTurret.name = "turret";
+           abrams.details.Add(abramsTurret);
+           abrams.ReloadBody();
 
             var gun = Figures.Cylinder(8, 10, 270);
             gun.name = "gun";
@@ -170,7 +217,7 @@ namespace super3dproject
             gun.EmbedMatrix(gunMatrix);
 
                 
-            abrams.details.Add(gun);
+            abrams["turret"].details.Add(gun);
             var abramsMatrix = Matrix.Movement(new Models.Point()
             {
                 X = 1000,
@@ -198,17 +245,23 @@ namespace super3dproject
         }
         Body copycar;
 
-        Matrix carPerspectiveMatrix;
+        Models.Point cameraPosition;
+        Matrix cameraPerspectiveMatrix;
+        Matrix cameraMovementMatrix;
+        Matrix cameraRotationMatrix;
+        Axle cameraRotationAxle;
+        
+        double cameraRotationAngle = 0.0;
         private void Image_MouseMove(object sender, MouseEventArgs e)
         {
-
-            carPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
+            
+         /*   cameraPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
             {
                 X = e.GetPosition(Screen).X,
                 Y = e.GetPosition(Screen).Y,
                 Z = zoomZPosition
             });
-
+            */
         }
         bool hoodOpening = false;
         bool wheelRunning = false;
@@ -261,7 +314,7 @@ namespace super3dproject
 
 
 
-                    var gunAbrams = abrams["gun"];
+                    var gunAbrams = abrams["turret"]["gun"];
                     zAxlePoint = gunAbrams.axles.Z.firstPoint;
                     centerPoint = gunAbrams.GetCenter();
                     vectorPoint = new Models.Point()
@@ -294,7 +347,7 @@ namespace super3dproject
                     gunCar.EmbedMatrix(gunMatrix);
                     
                     
-                    var gunAbrams = abrams["gun"];
+                    var gunAbrams = abrams["turret"]["gun"];
                     zAxlePoint = gunAbrams.axles.Z.firstPoint;
                     centerPoint = gunAbrams.GetCenter();
                     vectorPoint = new Models.Point()
@@ -310,48 +363,7 @@ namespace super3dproject
                     gunPosition--;
                 }
             }
-/*
 
-            var coefficient = -50;
-
-
-
-
-
-
-            if (gunShuting)
-            {
-                if (gunPosition < 40)
-                {
-                    coefficient = 5;
-                    gunPosition += 10;
-                }
-            }
-            else
-                
-                gunPosition--;
-
-            if (gunPosition > 0)
-            {
-                if (gunPosition > 25)
-                {
-                    gunShuting = false;
-                }
-
-                var gun = car["gun"];
-                var zAxlePoint = gun.axles.Z.firstPoint;
-                var centerPoint = gun.GetCenter();
-                var vectorPoint = new Models.Point()
-                {
-                    X = (centerPoint.X - zAxlePoint.X) / coefficient,
-                    Y = (centerPoint.Y - zAxlePoint.Y) / coefficient,
-                    Z = (centerPoint.Z - zAxlePoint.Z) / coefficient
-                };
-
-                var gunMatrix = Matrix.Movement(vectorPoint);
-                gun.EmbedMatrix(gunMatrix);
-            }
-            */
 
 
             if (wheelRunning)
@@ -367,9 +379,9 @@ namespace super3dproject
                     if (wheelRotateAngle < 10)
                     {
 
-                        var turretAbramsAxle = abrams.axles.Y;
+                        var turretAbramsAxle = abrams["turret"].axles.Y;
                         var abramsMatrix = Matrix.Rotation(turretAbramsAxle, 0.05);
-                        abrams.EmbedMatrix(abramsMatrix);
+                        abrams["turret"].EmbedMatrix(abramsMatrix);
 
 
                         var wheelYAxle = car.axles.customs.Find(x => x.info == "wheelYAxle");
@@ -383,9 +395,9 @@ namespace super3dproject
                     if (wheelRotateAngle > -10)
                     {
 
-                        var turretAbramsAxle = abrams.axles.Y;
+                        var turretAbramsAxle = abrams["turret"].axles.Y;
                         var abramsMatrix = Matrix.Rotation(turretAbramsAxle, -0.05);
-                        abrams.EmbedMatrix(abramsMatrix);
+                        abrams["turret"].EmbedMatrix(abramsMatrix);
 
 
 
@@ -426,10 +438,25 @@ namespace super3dproject
             }
             Image.Children.Clear();
 
+
+
+            {
+                var abramsCopy = abrams.export();
+                abramsCopy.EmbedMatrix(cameraMovementMatrix);
+                abramsCopy.EmbedMatrix(cameraRotationMatrix);
+                abramsCopy.EmbedMatrix(cameraPerspectiveMatrix);
+                foreach (var line in abramsCopy.GetPolylines())
+                {
+                    Image.Children.Add(line);
+                }
+            }
+
             if (!hideCar)
             {
                 copycar = car.export();
-                copycar.EmbedMatrix(carPerspectiveMatrix);
+                copycar.EmbedMatrix(cameraMovementMatrix);
+                copycar.EmbedMatrix(cameraRotationMatrix);
+                copycar.EmbedMatrix(cameraPerspectiveMatrix);
                 foreach (var line in copycar.GetPolylines())
                 {
                     Image.Children.Add(line);
@@ -442,19 +469,12 @@ namespace super3dproject
             if (!hideIron)
             {
 
-                var sCopy = helmet.export();
-                sCopy.EmbedMatrix(carPerspectiveMatrix);
+                var helmetCopy = helmet.export();
+                helmetCopy.EmbedMatrix(cameraMovementMatrix);
+                helmetCopy.EmbedMatrix(cameraRotationMatrix);
+                helmetCopy.EmbedMatrix(cameraPerspectiveMatrix);
 
-                foreach (var line in sCopy.GetPolylines())
-                {
-                    Image.Children.Add(line);
-                }
-            }
-            {
-                var abramsCopy = abrams.export();
-                abramsCopy.EmbedMatrix(carPerspectiveMatrix);
-
-                foreach (var line in abramsCopy.GetPolylines())
+                foreach (var line in helmetCopy.GetPolylines())
                 {
                     Image.Children.Add(line);
                 }
@@ -463,7 +483,7 @@ namespace super3dproject
 
         private void Image_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            carPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
+            cameraPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
             {
                 X = e.GetPosition(Screen).X,
                 Y = e.GetPosition(Screen).Y,
@@ -476,7 +496,13 @@ namespace super3dproject
 
         private void KeyUpEvent(object sender, KeyEventArgs e)
         {
+
+
             
+
+
+
+            /*
             switch (e.Key)
             {
                 case Key.W:
@@ -499,11 +525,76 @@ namespace super3dproject
                         wheelRotating = false;
                     }
                     break;
-            }
+            }*/
         }
 
         private void KeyDownEvent(object sender, KeyEventArgs e)
         {
+
+
+
+            switch (e.Key)
+            {
+                case Key.W:
+                    {
+                        cameraPosition.Z += Math.Cos(cameraRotationAngle)* 100;
+                        cameraPosition.X += Math.Sin(cameraRotationAngle)*100;
+                    }
+                    break;
+
+                case Key.S:
+                    {
+
+                        cameraPosition.Z -= Math.Cos(cameraRotationAngle) * 100;
+                        cameraPosition.X -= Math.Sin(cameraRotationAngle) * 100;
+                    }
+                    break;
+
+                case Key.Q:
+                    {
+
+                        cameraPosition.Z += Math.Cos(cameraRotationAngle+Math.PI/2) * 100;
+                        cameraPosition.X += Math.Sin(cameraRotationAngle + Math.PI / 2) * 100;
+                    }
+                    break;
+
+                case Key.E:
+                    {
+
+                        cameraPosition.Z -= Math.Cos(cameraRotationAngle + Math.PI / 2) * 100;
+                        cameraPosition.X -= Math.Sin(cameraRotationAngle + Math.PI / 2) * 100;
+                    }
+                    break;
+                case Key.A:
+                    {
+                        cameraRotationAngle += 0.1;
+                    }
+                    break;
+                case Key.D:
+                    {
+                        cameraRotationAngle -= 0.1;
+                    }
+                    break;
+                case Key.Space:
+                    {
+                        gunShuting = true;
+                    }
+                    break;
+            }
+            cameraMovementMatrix = Matrix.Movement(new Models.Point()
+            {
+                X = cameraPosition.X - 683,
+                Y = cameraPosition.Y - 384,
+                Z = -cameraPosition.Z 
+            });
+            cameraPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
+                {
+                    X =  683,
+                    Y =  384,
+                    Z = 1000
+                });
+            cameraRotationMatrix = Matrix.Rotation(cameraRotationAxle, cameraRotationAngle);
+          /*  /*
             switch (e.Key)
             {
                 case Key.W:
@@ -536,7 +627,7 @@ namespace super3dproject
                         gunShuting = true;
                     }
                     break;
-            }
+            }*/
         }
 
         private void hideIronClick(object sender, RoutedEventArgs e)
