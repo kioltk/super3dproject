@@ -250,6 +250,9 @@ namespace super3dproject
         Matrix cameraMovementMatrix;
         Matrix cameraRotationMatrix;
         Axle cameraRotationAxle;
+        int cameraHorizontalMovement = 0;
+        int cameraVerticalMovement = 0;
+        int cameraRotation = 0;
         
         double cameraRotationAngle = 0.0;
         private void Image_MouseMove(object sender, MouseEventArgs e)
@@ -271,7 +274,7 @@ namespace super3dproject
         int hoodAngle;
         int wheelRotateAngle;
         int fps;
-        bool gunShuting = false;
+        bool gunShooting = false;
         int gunPosition = 0;
 
         private void HoodClick(object sender, RoutedEventArgs e)
@@ -286,14 +289,13 @@ namespace super3dproject
         bool hideCar = false;
         bool hideIron = false;
 
-        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        public void Shooting()
         {
-            fps++;
-            if (gunShuting)
+            if (gunShooting)
             {
                 if (gunPosition > 14)
                 {
-                    gunShuting = false;
+                    gunShooting = false;
                 }
                 else
                 {
@@ -345,8 +347,8 @@ namespace super3dproject
 
                     var gunMatrix = Matrix.Movement(vectorPoint);
                     gunCar.EmbedMatrix(gunMatrix);
-                    
-                    
+
+
                     var gunAbrams = abrams["turret"]["gun"];
                     zAxlePoint = gunAbrams.axles.Z.firstPoint;
                     centerPoint = gunAbrams.GetCenter();
@@ -358,13 +360,14 @@ namespace super3dproject
                     };
 
                     gunMatrix = Matrix.Movement(vectorPoint);
-                    
+
                     gunAbrams.EmbedMatrix(gunMatrix);
                     gunPosition--;
                 }
             }
-
-
+        }
+        public void CarActivity()
+        {
 
             if (wheelRunning)
             {
@@ -436,6 +439,9 @@ namespace super3dproject
                 }
 
             }
+        }
+        public void PicturePrint()
+        {
             Image.Children.Clear();
 
 
@@ -462,10 +468,6 @@ namespace super3dproject
                     Image.Children.Add(line);
                 }
             }
-
-
-
-
             if (!hideIron)
             {
 
@@ -480,6 +482,58 @@ namespace super3dproject
                 }
             }
         }
+        public void CameraMovement()
+        {
+            bool movement = false;
+            if (cameraVerticalMovement != 0)
+            {
+                cameraPosition.Z += Math.Cos(cameraRotationAngle) *cameraVerticalMovement*5;
+                cameraPosition.X += Math.Sin(cameraRotationAngle) *cameraVerticalMovement*5;
+                movement = true;
+            }
+            if (cameraHorizontalMovement != 0)
+            {
+
+                cameraPosition.Z += Math.Cos(cameraRotationAngle + Math.PI / 2)* cameraHorizontalMovement*5;
+                cameraPosition.X += Math.Sin(cameraRotationAngle + Math.PI / 2)* cameraHorizontalMovement*5;
+                movement = true;
+            }
+            if (cameraRotation != 0)
+            {
+                cameraRotationAngle += cameraRotation * 0.01;
+                movement = true;
+            }
+
+            if (movement)
+            {
+
+                cameraMovementMatrix = Matrix.Movement(new Models.Point()
+                {
+                    X = cameraPosition.X - 683,
+                    Y = cameraPosition.Y - 384,
+                    Z = -cameraPosition.Z
+                });
+                cameraPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
+                {
+                    X = 683,
+                    Y = 384,
+                    Z = 1000
+                });
+                cameraRotationMatrix = Matrix.Rotation(cameraRotationAxle, cameraRotationAngle);
+        
+            }
+        }
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            fps++;
+
+            Shooting();
+            CarActivity();
+            CameraMovement();
+
+
+            PicturePrint();
+        }
 
         private void Image_MouseWheel(object sender, MouseWheelEventArgs e)
         {
@@ -492,40 +546,82 @@ namespace super3dproject
             zoomZPosition-=e.Delta;
         }
 
-        
+
 
         private void KeyUpEvent(object sender, KeyEventArgs e)
         {
 
-
-            
-
-
-
-            /*
             switch (e.Key)
             {
                 case Key.W:
                     {
-                        wheelRunning = false;
+                        cameraVerticalMovement = 0;
                     }
                     break;
+
                 case Key.S:
                     {
-                        wheelRunning = false;
+                        cameraVerticalMovement = 0;
+                    }
+                    break;
+
+                case Key.Q:
+                    {
+
+                        cameraHorizontalMovement = 0;
+                    }
+                    break;
+
+                case Key.E:
+                    {
+
+                        cameraHorizontalMovement = 0;
                     }
                     break;
                 case Key.A:
                     {
-                        wheelRotating = false;
+                        cameraRotation = 0;
                     }
                     break;
                 case Key.D:
                     {
-                        wheelRotating = false;
+                        cameraRotation = 0;
                     }
                     break;
-            }*/
+                case Key.Space:
+                    {
+                        gunShooting = true;
+                    }
+                    break;
+            }
+
+
+
+                /*
+                switch (e.Key)
+                {
+                    case Key.W:
+                        {
+                            wheelRunning = false;
+                        }
+                        break;
+                    case Key.S:
+                        {
+                            wheelRunning = false;
+                        }
+                        break;
+                    case Key.A:
+                        {
+                            wheelRotating = false;
+                        }
+                        break;
+                    case Key.D:
+                        {
+                            wheelRotating = false;
+                        }
+                        break;
+                }*/
+            
         }
 
         private void KeyDownEvent(object sender, KeyEventArgs e)
@@ -537,64 +633,44 @@ namespace super3dproject
             {
                 case Key.W:
                     {
-                        cameraPosition.Z += Math.Cos(cameraRotationAngle)* 100;
-                        cameraPosition.X += Math.Sin(cameraRotationAngle)*100;
+                        cameraVerticalMovement = 1;
                     }
                     break;
 
                 case Key.S:
                     {
-
-                        cameraPosition.Z -= Math.Cos(cameraRotationAngle) * 100;
-                        cameraPosition.X -= Math.Sin(cameraRotationAngle) * 100;
+                        cameraVerticalMovement = -1;
                     }
                     break;
 
                 case Key.Q:
                     {
-
-                        cameraPosition.Z += Math.Cos(cameraRotationAngle+Math.PI/2) * 100;
-                        cameraPosition.X += Math.Sin(cameraRotationAngle + Math.PI / 2) * 100;
+                        cameraHorizontalMovement = 1;  
                     }
                     break;
 
                 case Key.E:
                     {
-
-                        cameraPosition.Z -= Math.Cos(cameraRotationAngle + Math.PI / 2) * 100;
-                        cameraPosition.X -= Math.Sin(cameraRotationAngle + Math.PI / 2) * 100;
+                        cameraHorizontalMovement = -1;
                     }
                     break;
                 case Key.A:
                     {
-                        cameraRotationAngle += 0.1;
+                        cameraRotation= 1;
                     }
                     break;
                 case Key.D:
                     {
-                        cameraRotationAngle -= 0.1;
+                        cameraRotation =-1;
                     }
                     break;
                 case Key.Space:
                     {
-                        gunShuting = true;
+                        gunShooting = true;
                     }
                     break;
             }
-            cameraMovementMatrix = Matrix.Movement(new Models.Point()
-            {
-                X = cameraPosition.X - 683,
-                Y = cameraPosition.Y - 384,
-                Z = -cameraPosition.Z 
-            });
-            cameraPerspectiveMatrix = Matrix.CameraPerspective(new Models.Point()
-                {
-                    X =  683,
-                    Y =  384,
-                    Z = 1000
-                });
-            cameraRotationMatrix = Matrix.Rotation(cameraRotationAxle, cameraRotationAngle);
-          /*  /*
+           /*  /*
             switch (e.Key)
             {
                 case Key.W:
@@ -624,7 +700,7 @@ namespace super3dproject
                     break;
                 case Key.Space:
                     {
-                        gunShuting = true;
+                        gunShooting = true;
                     }
                     break;
             }*/
